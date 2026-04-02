@@ -409,10 +409,14 @@ function buildParams(model: Model<"openai-completions">, context: Context, optio
 
 	if (compat.thinkingFormat === "zai" && model.reasoning) {
 		(params as any).enable_thinking = !!options?.reasoningEffort;
-	} else if (compat.thinkingFormat === "qwen" && model.reasoning) {
-		(params as any).enable_thinking = !!options?.reasoningEffort;
-	} else if (compat.thinkingFormat === "qwen-chat-template" && model.reasoning) {
-		(params as any).chat_template_kwargs = { enable_thinking: !!options?.reasoningEffort };
+	} else if (compat.thinkingFormat === "qwen") {
+		// Qwen models default to thinking enabled, so we must always explicitly set
+		// enable_thinking — both to turn it on (when reasoning is requested) and to
+		// turn it off (when model.reasoning is false or no reasoningEffort is given).
+		(params as any).enable_thinking = model.reasoning && !!options?.reasoningEffort;
+	} else if (compat.thinkingFormat === "qwen-chat-template") {
+		// Same rationale as "qwen": always explicitly set to avoid model defaults.
+		(params as any).chat_template_kwargs = { enable_thinking: model.reasoning && !!options?.reasoningEffort };
 	} else if (compat.thinkingFormat === "openrouter" && model.reasoning) {
 		// OpenRouter normalizes reasoning across providers via a nested reasoning object.
 		const openRouterParams = params as typeof params & { reasoning?: { effort?: string } };
